@@ -1,10 +1,18 @@
 "use client";
-import { Button } from "@/components/ui/button";
+import { Button, ButtonSkeleton } from "@/components/ui/button";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 
 const Header = () => {
-  const { data } = useSession();
+  const { data, status } = useSession();
+
+  if (status === "loading")
+    return (
+      <header className="self-end flex gap-2">
+        <ButtonSkeleton className="text-transparent">signup</ButtonSkeleton>
+        <ButtonSkeleton className="text-transparent">login</ButtonSkeleton>
+      </header>
+    );
 
   if (data?.user)
     return (
