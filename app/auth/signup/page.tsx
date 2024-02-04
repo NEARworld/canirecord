@@ -1,6 +1,5 @@
 "use client";
 
-import { createUser } from "@/app/actions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -14,12 +13,11 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { signIn } from "next-auth/react";
-import { Luckiest_Guy } from "next/font/google";
-import { FieldValues, SubmitHandler, useForm } from "react-hook-form";
+import { SubmitHandler, useForm } from "react-hook-form";
 import z from "zod";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const formSchema: z.ZodSchema = z
   .object({
@@ -41,14 +39,29 @@ const formSchema: z.ZodSchema = z
   });
 
 export default function Home() {
+  const router = useRouter();
+
   const form = useForm<z.infer<typeof formSchema>>({
     mode: "onChange",
     resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: "",
+      username: "",
+      password: "",
+      confirm: "",
+    },
   });
 
-  const onSubmit: SubmitHandler<FieldValues> = async (data, event) => {
-    event?.preventDefault();
-    await signIn("credentials", { ...data, redirect: false });
+  const onSubmit: SubmitHandler<FormData> = async (data) => {
+    await fetch("/api/auth/signup", {
+      method: "POST",
+      body: JSON.stringify(data),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    router.push("/");
   };
 
   return (
@@ -60,11 +73,7 @@ export default function Home() {
       </header>
       <Card className="w-1/5 grid place-items-center py-8 mt-2">
         <Form {...form}>
-          <form
-            style={{ width: 250 }}
-            action={createUser}
-            onSubmit={form.handleSubmit(onSubmit)}
-          >
+          <form style={{ width: 250 }} onSubmit={form.handleSubmit(onSubmit)}>
             <FormField
               name={"email"}
               control={form.control}

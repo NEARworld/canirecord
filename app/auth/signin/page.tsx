@@ -1,6 +1,4 @@
 "use client";
-
-import { createUser } from "@/app/actions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -16,8 +14,10 @@ import { Input } from "@/components/ui/input";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeft } from "lucide-react";
 import { signIn } from "next-auth/react";
+import { isRedirectError } from "next/dist/client/components/redirect";
 import Link from "next/link";
-import { FieldValues, SubmitHandler, useForm } from "react-hook-form";
+import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
 import z from "zod";
 
 const formSchema: z.ZodSchema = z.object({
@@ -29,14 +29,35 @@ const formSchema: z.ZodSchema = z.object({
 });
 
 export default function Home() {
+  const router = useRouter();
+
   const form = useForm<z.infer<typeof formSchema>>({
     mode: "onChange",
     resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: "",
+      username: "",
+      password: "",
+    },
   });
 
-  const onSubmit: SubmitHandler<FieldValues> = async (data, event) => {
-    event?.preventDefault();
-    await signIn("credentials", { ...data, redirect: false });
+  const onSubmit = async (data: {
+    email: string;
+    username: string;
+    password: string;
+  }) => {
+    try {
+      await signIn("credentials", {
+        redirect: false,
+        ...data,
+      });
+    } catch (e) {
+      if (isRedirectError(e)) {
+        throw e;
+      }
+    } finally {
+      router.push("/");
+    }
   };
 
   return (
@@ -49,11 +70,7 @@ export default function Home() {
 
       <Card className="w-1/5 grid place-items-center py-8">
         <Form {...form}>
-          <form
-            style={{ width: 250 }}
-            action={createUser}
-            onSubmit={form.handleSubmit(onSubmit)}
-          >
+          <form style={{ width: 250 }} onSubmit={form.handleSubmit(onSubmit)}>
             <FormField
               name={"email"}
               control={form.control}
